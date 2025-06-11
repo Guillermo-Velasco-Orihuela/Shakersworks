@@ -3,6 +3,7 @@ from app.utils.ingest import ingest_corpus
 
 router = APIRouter(tags=["admin"])
 
+
 @router.post("/reload-index")
 def reload_index():
     """

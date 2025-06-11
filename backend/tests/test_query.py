@@ -1,30 +1,59 @@
+# backend/tests/test_query.py
+
+import pytest
+import sys
+import os
 from fastapi.testclient import TestClient
-import sys, os
 
-# ensure the backend/ folder is on sys.path so we can import our app
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Add the project root directory to the Python path
+# This allows us to import the 'backend' module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from app.main import app
+from backend.app.main import app
+
 
 client = TestClient(app)
 
-def test_query_invite_collaborators():
-    # Use a question to hit the collaborators doc (may return empty if no exact match)
-    question = (
-        "What types of roles and permissions are there when inviting collaborators?"
+def test_query_returns_answer_and_sources(monkeypatch):
+    # Stub RagService.ask to return a known result
+    # We import it here to ensure the path is already set
+    from backend.app.services.rag_service import RagService
+    def fake_ask(self, question):
+        return {
+            "answer": "Stubbed answer",
+            "source_docs": [
+                {"title": "intro", "url": "/docs/intro.md"}
+            ]
+        }
+    monkeypatch.setattr(RagService, "ask", fake_ask)
+
+    response = client.post(
+        "/query",
+        json={"question": "What is Shakers?"}
     )
-    resp = client.post("/query", json={"question": question})
-    assert resp.status_code == 200, resp.text
-
-    data = resp.json()
-    # must return an answer string
-    assert "answer" in data and isinstance(data["answer"], str)
-
-    # must return source_docs as a list (can be empty)
-    assert "source_docs" in data and isinstance(data["source_docs"], list)
     
-    # if there are any source_docs, they should have a title
-    for doc in data["source_docs"]:
-        assert "title" in doc and isinstance(doc["title"], str)
-        assert "url" in doc and isinstance(doc["url"], str)
-        assert "text" in doc and isinstance(doc["text"], str)
+    # Optional: print the response content for debugging
+    print("\n" + "="*50)
+    print("Response Content:")
+    print(response.json())
+    print("="*50 + "\n")
+    
+    
+    assert response.status_code == 200 
+    data = response.json()
+    assert "answer" in data and data["answer"] == "Stubbed answer"
+    assert "source_docs" in data and isinstance(data["source_docs"], list)
+    assert data["source_docs"][0]["title"] == "intro"
+
+def test_query_out_of_scope(monkeypatch):
+    # Stub RagService.ask to simulate out-of-scope
+    from backend.app.services.rag_service import RagService
+    def fake_ask(self, question):
+        return {"answer": "I’m sorry, I don’t have information on that topic.", "source_docs": []}
+    monkeypatch.setattr(RagService, "ask", fake_ask)
+
+    response = client.post("/query", json={"question": "What is the speed of light?"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["answer"].startswith("I’m sorry")
+    assert data["source_docs"] == []

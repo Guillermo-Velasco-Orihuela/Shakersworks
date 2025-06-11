@@ -43,59 +43,6 @@
       ]
     },
     {
-      "type": "timeseries",
-      "title": "Total LLM Calls (Cumulative)",
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
-      "targets": [
-        { "expr": "llm_calls_total{endpoint=\"query\"}", "refId": "A", "legendFormat": "query" },
-        { "expr": "llm_calls_total{endpoint=\"recommend\"}", "refId": "B", "legendFormat": "recommend" }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Query Latency Percentiles",
-      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(request_latency_seconds_bucket{endpoint=\"query\"}[5m])) by (le))",
-          "refId": "A",
-          "legendFormat": "p50"
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket{endpoint=\"query\"}[5m])) by (le))",
-          "refId": "B",
-          "legendFormat": "p95"
-        },
-        {
-          "expr": "histogram_quantile(0.99, sum(rate(request_latency_seconds_bucket{endpoint=\"query\"}[5m])) by (le))",
-          "refId": "C",
-          "legendFormat": "p99"
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Recommend Latency Percentiles",
-      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(request_latency_seconds_bucket{endpoint=\"recommend\"}[5m])) by (le))",
-          "refId": "A",
-          "legendFormat": "p50"
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket{endpoint=\"recommend\"}[5m])) by (le))",
-          "refId": "B",
-          "legendFormat": "p95"
-        },
-        {
-          "expr": "histogram_quantile(0.99, sum(rate(request_latency_seconds_bucket{endpoint=\"recommend\"}[5m])) by (le))",
-          "refId": "C",
-          "legendFormat": "p99"
-        }
-      ]
-    },
-    {
       "type": "gauge",
       "title": "Cache Hit Ratio (Query)",
       "gridPos": { "x": 0, "y": 24, "w": 12, "h": 6 },
