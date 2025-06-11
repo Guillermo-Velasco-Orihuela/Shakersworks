@@ -17,5 +17,6 @@ class Settings:
     DATABASE_URL     = "sqlite:///./shakers.db"
     REDIS_URL        = "redis://localhost:6379/0"
     VECTOR_STORE_URL = "http://localhost:8000"
-    OPENAI_API_KEY   = ""
+    OPENAI_API_KEY   = "sk-proj"
+
 settings = Settings()

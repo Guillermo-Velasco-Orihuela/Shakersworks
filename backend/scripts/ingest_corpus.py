@@ -54,7 +54,7 @@ def main():
     emb_client   = EmbeddingClient(api_key=os.getenv("OPENAI_API_KEY"))
     vector_store = VectorStoreClient(url=os.getenv("VECTOR_STORE_URL"))
 
-    corpus_dir = os.path.join(os.path.dirname(__file__), "../data/corpus")
+    corpus_dir = os.path.join(os.path.dirname(__file__), "../data")
     records = []
 
     # load & chunk all docs

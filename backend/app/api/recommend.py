@@ -1,6 +1,9 @@
+# backend/app/api/recommend.py
+
 from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+import time
 
 from app.config import settings
 from app.db.session import get_db
@@ -9,30 +12,36 @@ from app.services.rec_service import RecService
 from app.utils.embeddings import EmbeddingClient
 from app.utils.vector_store import VectorStoreClient
 from app.utils.cache import get_cache, cache_get, cache_set
+from app.utils.metrics import CACHE_HITS, CACHE_MISSES, REQUEST_LATENCY
 
 router = APIRouter()
 
 emb_client   = EmbeddingClient(api_key=settings.OPENAI_API_KEY)
-vector_store = VectorStoreClient(url=settings.VECTOR_STORE_URL)
+vector_store = VectorStoreClient()
 
-cache      = get_cache()
-CACHE_TTL  = 300  # seconds
+cache     = get_cache()
+CACHE_TTL = 300
 
 @router.post("", response_model=List[Recommendation])
 def recommend_endpoint(
     body: RecommendRequest,
     db: Session = Depends(get_db),
 ):
-    # Normalize user_id and build cache key
-    uid = body.user_id.strip()
-    cache_key = f"recommend:{uid}"
+    endpoint = "recommend"
+    start = time.time()
 
-    # 1) Try to return cached recommendations
-    cached = cache_get(cache_key)
+    uid = body.user_id.strip()
+    key = f"recommend:{uid}"
+
+    cached = cache_get(key)
     if cached is not None:
+        CACHE_HITS.labels(endpoint=endpoint).inc()
+        duration = time.time() - start
+        REQUEST_LATENCY.labels(endpoint=endpoint, method="POST").observe(duration)
         return cached
 
-    # 2) Otherwise compute via RecService
+    CACHE_MISSES.labels(endpoint=endpoint).inc()
+
     service = RecService(
         db=db,
         embedding_client=emb_client,
@@ -40,6 +49,8 @@ def recommend_endpoint(
     )
     recs = service.recommend(body.user_id)
 
-    # 3) Cache and return
-    cache_set(cache_key, recs, ttl=CACHE_TTL)
+    cache_set(key, recs, ttl=CACHE_TTL)
+
+    duration = time.time() - start
+    REQUEST_LATENCY.labels(endpoint=endpoint, method="POST").observe(duration)
     return recs

@@ -7,14 +7,14 @@ from app.utils.vector_store import VectorStoreClient
 
 def ingest_corpus(max_words_per_chunk: int = 200):
     """
-    Load all .md files under backend/data/corpus, chunk them,
+    Load all .md files under backend/data/, chunk them,
     embed each chunk, and upsert into the 'shakers' Chroma collection.
     """
     emb_client   = EmbeddingClient(api_key=settings.OPENAI_API_KEY)
     vector_store = VectorStoreClient(url=settings.VECTOR_STORE_URL)
 
     base_dir   = Path(__file__).resolve().parents[2]
-    corpus_dir = base_dir / "data" / "corpus"
+    corpus_dir = base_dir / "data"
     if not corpus_dir.exists():
         return
 

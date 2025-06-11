@@ -1,0 +1,137 @@
+{
+  "id": null,
+  "uid": "shakers_overview",
+  "title": "Shakers Full Metrics",
+  "schemaVersion": 27,
+  "version": 1,
+  "refresh": "10s",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Cache Hits vs Misses (Query)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "cache_hits_total{endpoint=\"query\"}", "refId": "A", "legendFormat": "hits" },
+        { "expr": "cache_misses_total{endpoint=\"query\"}", "refId": "B", "legendFormat": "misses" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cache Hits vs Misses (Recommend)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "cache_hits_total{endpoint=\"recommend\"}", "refId": "A", "legendFormat": "hits" },
+        { "expr": "cache_misses_total{endpoint=\"recommend\"}", "refId": "B", "legendFormat": "misses" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM Calls per Minute",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(llm_calls_total{endpoint=\"query\"}[1m])",
+          "refId": "A",
+          "legendFormat": "query"
+        },
+        {
+          "expr": "rate(llm_calls_total{endpoint=\"recommend\"}[1m])",
+          "refId": "B",
+          "legendFormat": "recommend"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Total LLM Calls (Cumulative)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "llm_calls_total{endpoint=\"query\"}", "refId": "A", "legendFormat": "query" },
+        { "expr": "llm_calls_total{endpoint=\"recommend\"}", "refId": "B", "legendFormat": "recommend" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Query Latency Percentiles",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(request_latency_seconds_bucket{endpoint=\"query\"}[5m])) by (le))",
+          "refId": "A",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket{endpoint=\"query\"}[5m])) by (le))",
+          "refId": "B",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(request_latency_seconds_bucket{endpoint=\"query\"}[5m])) by (le))",
+          "refId": "C",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Recommend Latency Percentiles",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(request_latency_seconds_bucket{endpoint=\"recommend\"}[5m])) by (le))",
+          "refId": "A",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket{endpoint=\"recommend\"}[5m])) by (le))",
+          "refId": "B",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(request_latency_seconds_bucket{endpoint=\"recommend\"}[5m])) by (le))",
+          "refId": "C",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "Cache Hit Ratio (Query)",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "cache_hits_total{endpoint=\"query\"} / (cache_hits_total{endpoint=\"query\"} + cache_misses_total{endpoint=\"query\"})",
+          "refId": "A",
+          "legendFormat": "hit ratio"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Cache Hit Ratio (Recommend)",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "cache_hits_total{endpoint=\"recommend\"} / (cache_hits_total{endpoint=\"recommend\"} + cache_misses_total{endpoint=\"recommend\"})",
+          "refId": "A",
+          "legendFormat": "hit ratio"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percent"
+        }
+      }
+    }
+  ]
+}

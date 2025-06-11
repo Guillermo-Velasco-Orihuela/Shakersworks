@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7
+    container_name: shakers-redis
+    ports:
+      - "6379:6379"
+
+  prometheus:
+    image: prom/prometheus
+    container_name: shakers-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus_config:/etc/prometheus   # contains prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    container_name: shakers-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile         # assumes your FastAPI Dockerfile is at backend/Dockerfile
+    container_name: shakers-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env                         # relative to backend/
+    depends_on:
+      - redis
+    # override REDIS_URL so the app connects to the 'redis' service on Docker network
+    environment:
+      - REDIS_URL=redis://redis:6379/0
