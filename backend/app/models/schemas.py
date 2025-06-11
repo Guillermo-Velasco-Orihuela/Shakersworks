@@ -38,3 +38,20 @@ class Recommendation(BaseModel):
     """
     title: str
     explanation: str
+
+
+class TalentRequest(BaseModel):
+    """
+    Incoming JSON body for talent recommendations.
+    """
+    request: str  # e.g. "I need an Android developer with 8 years of experience"
+
+
+class TalentRecommendation(BaseModel):
+    """
+    One recommended talent.
+    """
+    name: str
+    role: str
+    experience: int
+    explanation: str

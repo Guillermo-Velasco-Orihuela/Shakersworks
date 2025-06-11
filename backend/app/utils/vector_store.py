@@ -1,42 +1,50 @@
 import chromadb
 from chromadb.config import Settings as ChromaSettings
-
+from chromadb import PersistentClient
+from pathlib import Path
 
 class VectorStoreClient:
     """
-    Client for interacting with a Chroma vector store collection.
-
-    Provides methods to upsert embedding records and query similar documents.
+    Client for interacting with a Chroma vector store collection,
+    backed by an on-disk DuckDB+Parquet store so embeddings persist
+    across processes.
     """
 
-    def __init__(self, url: str = None):  # pragma: no cover
+    def __init__(
+        self,
+        persist_directory: str = "./chroma_db",
+        collection_name: str = "shakers",
+    ):
         """
-        Initialize the Chroma client and get (or create) the 'shakers' collection.
-
         Args:
-            url: Optional Chroma server URL (not used when running embedded).
+          persist_directory: path where Chroma will write its
+              DuckDB+Parquet files.
+          collection_name:   name of the collection to use
+                             (e.g. "talent_profiles").
         """
-        # Instantiate the Chroma client with default settings
-        self.client = chromadb.Client(ChromaSettings())
-        # Retrieve or create the named collection for vector operations
-        self.collection = self.client.get_or_create_collection("shakers")
+        db_dir = Path(persist_directory)
+        db_dir.mkdir(parents=True, exist_ok=True)
+
+        # New PersistentClient API — no deprecated configs
+        self.client = PersistentClient(path=str(db_dir))
+        self.collection = self.client.get_or_create_collection(collection_name)
 
     def upsert(self, records: list[dict]):
         """
         Upsert a batch of embedding records into the vector store.
 
-        Each record should include 'id', 'embedding', and 'metadata' keys.
-
-        Args:
-            records: List of dicts containing embedding data and metadata.
+        Each record must include 'id', 'embedding', and 'metadata'.
+        Supports both RAG (metadata.text) and talent (metadata.description).
         """
-        # Extract parallel lists for IDs, embeddings, metadata, and document text
-        ids = [r["id"] for r in records]
+        ids        = [r["id"]        for r in records]
         embeddings = [r["embedding"] for r in records]
-        metadatas = [r["metadata"] for r in records]
-        documents = [r["metadata"].get("text", "") for r in records]
+        metadatas  = [r["metadata"]  for r in records]
+        documents  = [
+            r["metadata"].get("description", "")
+            or r["metadata"].get("text", "")
+            for r in records
+        ]
 
-        # Perform batch add to the Chroma collection
         self.collection.add(
             ids=ids,
             embeddings=embeddings,
@@ -46,35 +54,28 @@ class VectorStoreClient:
 
     def query(self, embedding: list[float], top_k: int = 5) -> list[dict]:
         """
-        Query the vector store for the most similar documents to an embedding.
+        Query the vector store for the most similar entries.
 
-        Args:
-            embedding: A single embedding vector to query.
-            top_k: Number of top results to return.
-
-        Returns:
-            A list of dicts containing 'title', 'text', 'url', 'score', and 'embedding'.
+        Returns a list of dicts, each containing all metadata fields plus:
+          - 'text': the stored document or description
+          - 'score': the distance value
+          - 'embedding': the original vector
         """
-        # Execute the similarity search on the collection
         res = self.collection.query(
             query_embeddings=[embedding],
             n_results=top_k,
-            include=["metadatas", "documents", "distances", "embeddings"],
+            include=["metadatas","documents","distances","embeddings"],
         )
-        # Extract returned lists for the first (and only) query
         metadatas = res["metadatas"][0]
         documents = res["documents"][0]
         distances = res["distances"][0]
-        embs = res["embeddings"][0]
+        embs      = res["embeddings"][0]
 
-        # Combine parallel lists into the expected output format
         results = []
-        for meta, text, dist, emb in zip(metadatas, documents, distances, embs):
-            results.append({
-                "title": meta.get("title", ""),
-                "text": text,
-                "url": meta.get("url", ""),
-                "score": dist,
-                "embedding": emb,
-            })
+        for meta, doc, dist, emb in zip(metadatas, documents, distances, embs):
+            record = {**meta}
+            record["text"]      = doc
+            record["score"]     = dist
+            record["embedding"] = emb
+            results.append(record)
         return results

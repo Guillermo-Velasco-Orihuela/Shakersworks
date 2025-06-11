@@ -38,11 +38,16 @@ class UserQueryLog(Base):
     user_profile = relationship("UserProfile", back_populates="queries")
 
 
+
 class TalentProfile(Base):
+    """
+    Represents an available talent for recommendation.
+    """
     __tablename__ = "talent_profiles"
-    id              = Column(Integer, primary_key=True)
-    name            = Column(String, nullable=False)
-    headline        = Column(String, nullable=False)
-    skills          = Column(String)  # comma-separated
-    experience_years= Column(Integer)
-    bio             = Column(Text)
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    role = Column(String, index=True, nullable=False)
+    experience = Column(Integer, nullable=False)   # years of experience
+    description = Column(Text, nullable=False)     # e.g. "Android dev with 8 years…"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
